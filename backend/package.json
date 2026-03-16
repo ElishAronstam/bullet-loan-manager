@@ -1,0 +1,36 @@
+{
+  "name": "bullet-loan-backend",
+  "version": "1.0.0",
+  "author": "Elisheva Sherman",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --watch src src/server.ts",
+    "build": "tsc",
+    "generate": "graphql-codegen",
+    "start": "tsc && node dist/server.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@apollo/server": "^4.11.0",
+    "axios": "^1.7.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "graphql": "^16.9.0",
+    "reflect-metadata": "^0.2.2",
+    "sql.js": "^1.11.0",
+    "typeorm": "^0.3.20"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "^6.2.1",
+    "@graphql-codegen/typescript": "^5.0.9",
+    "@graphql-codegen/typescript-resolvers": "^5.1.7",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.7.5",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.6",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.6.3"
+  }
+}
