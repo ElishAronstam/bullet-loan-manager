@@ -56,6 +56,7 @@ export const ActionButton = styled.button`
 
 export const SearchInput = styled.input`
   width: 100%;
+  box-sizing: border-box;
   padding: 10px 16px;
   border: 1px solid ${theme.colors.border};
   border-radius: 8px;

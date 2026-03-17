@@ -35,8 +35,10 @@ because sometimes you just want to pay interest now and worry about the big stuf
 
 > The easiest way to get everything running — no setup headaches 🙌
 
+> ⚠️ Make sure Docker Desktop is installed and **running** before proceeding!
+
 ```bash
-git clone <repo-url>
+git clone https://github.com/ElishAronstam/bullet-loan-manager
 cd bullet-loan-manager
 docker compose up
 ```
