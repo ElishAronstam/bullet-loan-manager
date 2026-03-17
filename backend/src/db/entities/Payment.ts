@@ -1,8 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
 import { LoanEntity } from "./Loan";
-import { PaymentType } from "../../graphql/generated/types";
-
-export { PaymentType };
+import type { PaymentType } from "../../graphql/generated/types";
 
 @Entity()
 export class PaymentEntity {

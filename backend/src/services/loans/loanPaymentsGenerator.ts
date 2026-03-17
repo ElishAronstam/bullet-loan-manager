@@ -1,4 +1,5 @@
-import { PaymentEntity, PaymentType } from "../../db/entities/Payment";
+import { PaymentEntity } from "../../db/entities/Payment";
+import { PaymentType } from "../../graphql/generated/types";
 import type { RateHistory } from "../rates/primeRateScraper";
 
 const lastDayOfMonth = (year: number, month: number): Date =>

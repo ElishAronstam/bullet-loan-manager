@@ -1,4 +1,4 @@
-import { PaymentType } from "../../db/entities/Payment";
+import { PaymentType } from "../../graphql/generated/types";
 import type { RateHistory } from "../rates/primeRateScraper";
 import { generateLoanPayments } from "../loans/loanPaymentsGenerator";
 
