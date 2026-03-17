@@ -19,7 +19,7 @@ because sometimes you just want to pay interest now and worry about the big stuf
 
 | Layer    | Technology                                 |
 | -------- | ------------------------------------------ |
-| Frontend | React, TypeScript, Styled Components, Vite |
+| Frontend | React, TS, Styled Components,Toasts, Vite |
 | API      | GraphQL (Apollo Server & Apollo Client)    |
 | Backend  | Node.js, Express, TypeORM                  |
 | Database | SQLite (via sql.js — zero setup 🎉)        |
