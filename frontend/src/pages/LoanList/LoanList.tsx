@@ -2,27 +2,21 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@apollo/client";
 import { useNavigate } from "react-router-dom";
 import { GET_LOANS } from "../../graphql/queries";
-import { Container, NewLoanButton, SearchInput } from "./LoanList.styles";
+import { Container } from "./LoanList.styles";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import NewLoanModal from "../../components/NewLoanModal/NewLoanModal";
-import DataTable from "../../components/DataTable/DataTable";
-import QueryState from "../../components/QueryState";
-import InfiniteScroll from "../../components/InfiniteScroll";
+import DataTable, { type Column } from "../../components/DataTable/DataTable";
+import QueryState from "../../components/QueryState/QueryState";
+import InfiniteScroll from "../../components/InfiniteScroll/InfiniteScroll";
 import { useServerLoadMore } from "../../hooks/useLoadMore";
 import { SortOrder } from "../../graphql/generated/types";
 import type { Loan, GetLoansQuery } from "../../graphql/generated/types";
 
-const PAGE_SIZE = 2;
+const PAGE_SIZE = 7;
 type LoanSummary = Pick<
   Loan,
   "id" | "name" | "principal" | "startDate" | "totalInterest"
 >;
-
-export type Column<T> = {
-  header: string;
-  sortKey?: string;
-  value: (row: T) => string;
-};
 
 const columns: Column<LoanSummary>[] = [
   { header: "Name", sortKey: "name", value: (loan: LoanSummary) => loan.name },
@@ -106,18 +100,11 @@ const LoanList = () => {
       <PageHeader
         title="Sherman Loans"
         subtitle="Manage your bullet loan portfolio"
-        action={
-          <NewLoanButton onClick={() => setIsModalOpen(true)}>
-            + New Loan
-          </NewLoanButton>
-        }
-      />
-
-      <SearchInput
-        type="text"
-        placeholder="Search loans by name..."
-        value={searchText}
-        onChange={(event) => setSearchText(event.target.value)}
+        buttonText="+ New Loan"
+        onButtonClick={() => setIsModalOpen(true)}
+        searchPlaceholder="Search loans by name..."
+        searchValue={searchText}
+        onSearchChange={setSearchText}
       />
 
       <QueryState

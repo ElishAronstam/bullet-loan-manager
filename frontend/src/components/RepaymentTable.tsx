@@ -1,7 +1,6 @@
 import type { Payment } from "../graphql/generated/types";
-import DataTable from "./DataTable/DataTable";
-import InfiniteScroll from "./InfiniteScroll";
-import { Column } from "../pages/LoanList/LoanList";
+import DataTable, { type Column } from "./DataTable/DataTable";
+import InfiniteScroll from "./InfiniteScroll/InfiniteScroll";
 import { useClientLoadMore } from "../hooks/useLoadMore";
 
 const PAGE_SIZE = 15;
@@ -33,7 +32,10 @@ interface RepaymentTableProps {
 }
 
 const RepaymentTable = ({ payments }: RepaymentTableProps) => {
-  const { visibleCount, loading, hasMore, loadMore } = useClientLoadMore(payments.length, PAGE_SIZE);
+  const { visibleCount, loading, hasMore, loadMore } = useClientLoadMore(
+    payments.length,
+    PAGE_SIZE,
+  );
   const visiblePayments = payments.slice(0, visibleCount);
 
   return (

@@ -1,10 +1,5 @@
-import  { PaymentEntity, PaymentType } from "../db/entities/Payment";
-import type { RateHistory } from "./primeRateScraper";
-
-interface RateSegment {
-  days: number;
-  rate: number;
-}
+import { PaymentEntity, PaymentType } from "../../db/entities/Payment";
+import type { RateHistory } from "../rates/primeRateScraper";
 
 const lastDayOfMonth = (year: number, month: number): Date =>
   new Date(year, month + 1, 0);
@@ -16,20 +11,26 @@ const formatDate = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-// Get the active rate on a given date (most recent entry on or before that date)
+const nextMonthEnd = (date: Date): Date =>
+  new Date(date.getFullYear(), date.getMonth() + 2, 0);
+
+interface RateSegment {
+  days: number;
+  rate: number;
+}
+
 const getRateOnDate = (dateStr: string, rateHistory: RateHistory): number => {
-  let releventRate = rateHistory.values().next().value!;
+  let activeRate = rateHistory.values().next().value!;
   for (const [date, rate] of rateHistory) {
     if (date <= dateStr) {
-      releventRate = rate;
+      activeRate = rate;
     } else {
       break;
     }
   }
-  return releventRate;
+  return activeRate;
 };
 
-// Splits a month into segments based on rate changes (30/360: each month = 30 days)
 const buildRateSegments = (
   monthStart: string,
   monthEnd: string,
@@ -41,6 +42,7 @@ const buildRateSegments = (
 
   for (const [date, rate] of rateHistory) {
     if (date <= monthStart || date > monthEnd) continue;
+
     const changeDay = parseInt(date.slice(8, 10));
     if (changeDay > currentDay) {
       segments.push({ days: changeDay - currentDay, rate: currentRate });
@@ -48,24 +50,11 @@ const buildRateSegments = (
     currentRate = rate;
     currentDay = changeDay;
   }
-  segments.push({ days: 30 - (currentDay - 1), rate: currentRate });
 
+  segments.push({ days: 30 - (currentDay - 1), rate: currentRate });
   return segments;
 };
 
-// Calculates interest from rate segments: principal × Σ(days_i × rate_i / 360)
-const sumSegmentInterest = (
-  principal: number,
-  segments: RateSegment[],
-): number => {
-  const interest = segments.reduce(
-    (sum, seg) => sum + principal * seg.rate * (seg.days / 360),
-    0,
-  );
-  return Math.round(interest * 100) / 100;
-};
-
-// Calculate interest for a single month using 30/360 with mid-month rate changes.
 const calculateMonthInterest = (
   principal: number,
   year: number,
@@ -76,19 +65,24 @@ const calculateMonthInterest = (
   const monthEnd = formatDate(lastDayOfMonth(year, month));
 
   const segments = buildRateSegments(monthStart, monthEnd, rateHistory);
-  return sumSegmentInterest(principal, segments);
+  const interest = segments.reduce(
+    (sum, seg) => sum + principal * seg.rate * (seg.days / 360),
+    0,
+  );
+  return Math.round(interest * 100) / 100;
 };
+
+type PaymentData = Omit<PaymentEntity, "id" | "loan">;
 
 export const generateLoanPayments = (
   principal: number,
   startDate: string,
   endDate: string,
   rateHistory: RateHistory,
-): Omit<PaymentEntity, "id" | "loan">[] => {
-  const payments: Omit<PaymentEntity, "id" | "loan">[] = [];
+): PaymentData[] => {
+  const payments: PaymentData[] = [];
   const startDateObj = new Date(startDate);
   const endDateObj = new Date(endDate);
-  const balance = principal;
 
   let paymentDate = lastDayOfMonth(
     startDateObj.getFullYear(),
@@ -109,17 +103,12 @@ export const generateLoanPayments = (
       principal: 0,
       interest,
       total: interest,
-      remainingBalance: balance,
+      remainingBalance: principal,
     });
 
-    paymentDate = new Date(
-      paymentDate.getFullYear(),
-      paymentDate.getMonth() + 2,
-      0,
-    );
+    paymentDate = nextMonthEnd(paymentDate);
   }
 
-  // Final payment on endDate: principal + interest
   const endDateStr = formatDate(endDateObj);
   const finalInterest = calculateMonthInterest(
     principal,
@@ -128,19 +117,20 @@ export const generateLoanPayments = (
     rateHistory,
   );
 
-  if (
+  const lastPaymentIsEndDate =
     payments.length > 0 &&
-    payments[payments.length - 1].paymentDate === endDateStr
-  ) {
+    payments[payments.length - 1].paymentDate === endDateStr;
+
+  if (lastPaymentIsEndDate) {
     const lastPayment = payments[payments.length - 1];
-    lastPayment.paymentType = PaymentType.PrincipalInterest;
+    lastPayment.paymentType = PaymentType.PrincipalAndInterest;
     lastPayment.principal = principal;
     lastPayment.total = principal + lastPayment.interest;
     lastPayment.remainingBalance = 0;
   } else {
     payments.push({
       paymentDate: endDateStr,
-      paymentType: PaymentType.PrincipalInterest,
+      paymentType: PaymentType.PrincipalAndInterest,
       principal,
       interest: finalInterest,
       total: principal + finalInterest,

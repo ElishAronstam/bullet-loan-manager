@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { AppDataSource } from "../db/datasource";
-import { getCurrentPrimeRate } from "../services/primeRateScraper";
+import { getCurrentPrimeRate } from "../services/rates/primeRateScraper";
 
 const healthRouter = Router();
 
@@ -9,32 +9,34 @@ healthRouter.get("/health/live", (_req, res) => {
 });
 
 healthRouter.get("/health/ready", async (_req, res) => {
-  const checks: Record<string, { status: string; message?: string }> = {};
+  const dependencies: Record<string, { status: string; message?: string }> = {};
 
   try {
     await AppDataSource.query("SELECT 1");
-    checks.database = { status: "ok" };
+    dependencies.database = { status: "ok" };
   } catch (err) {
-    checks.database = {
+    dependencies.database = {
       status: "error",
-      message: err instanceof Error ? err.message : "Unknown error",
+      message: err instanceof Error ? err.message : "DB failed to start",
     };
   }
 
   try {
     await getCurrentPrimeRate();
-    checks.fred = { status: "ok" };
+    dependencies.fred = { status: "ok" };
   } catch (err) {
-    checks.fred = {
+    dependencies.fred = {
       status: "error",
-      message: err instanceof Error ? err.message : "Unknown error",
+      message: err instanceof Error ? err.message : "FRED API unavailable",
     };
   }
 
-  const allOk = Object.values(checks).every((c) => c.status === "ok");
-  res.status(allOk ? 200 : 503).json({
-    status: allOk ? "ready" : "not ready",
-    checks,
+  const ready = Object.values(dependencies).every(
+    (dependency) => dependency.status === "ok",
+  );
+  res.status(ready ? 200 : 503).json({
+    status: ready ? "ready" : "not ready",
+    checks: dependencies,
   });
 });
 

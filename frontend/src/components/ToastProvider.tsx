@@ -6,10 +6,18 @@ const ToastProvider = () => (
     position="top-right"
     toastOptions={{
       success: {
-        style: { background: theme.colors.accentLight, color: theme.colors.text, border: `1px solid ${theme.colors.accent}` },
+        style: {
+          background: theme.colors.accentLight,
+          color: theme.colors.text,
+          border: `1px solid ${theme.colors.accent}`,
+        },
       },
       error: {
-        style: { background: "#FEE2E2", color: theme.colors.text, border: `1px solid ${theme.colors.error}` },
+        style: {
+          background: "#FEE2E2",
+          color: theme.colors.text,
+          border: `1px solid ${theme.colors.error}`,
+        },
       },
     }}
   />

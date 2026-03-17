@@ -39,7 +39,7 @@ async function main() {
   await new Promise<void>((resolve) =>
     httpServer.listen({ port: PORT }, resolve),
   );
-  console.log(`Server running at http://localhost:${PORT}/graphql`);
+  console.log(`Server running at: http://localhost:${PORT}/graphql`);
   console.log(
     `Health checks available at: http://localhost:${PORT}/health/live,  http://localhost:${PORT}/health/ready`,
   );

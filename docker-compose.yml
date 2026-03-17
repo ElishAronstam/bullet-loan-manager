@@ -1,0 +1,16 @@
+services:
+  backend:
+    image: 3d311984/bullet-loan-backend:latest
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+
+  frontend:
+    image: 3d311984/bullet-loan-frontend:latest
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+    depends_on:
+      - backend

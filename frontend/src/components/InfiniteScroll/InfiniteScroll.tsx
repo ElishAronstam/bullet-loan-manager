@@ -1,6 +1,9 @@
 import { useRef, useEffect, useCallback } from "react";
-import styled, { keyframes } from "styled-components";
-import { theme } from "../theme";
+import {
+  LoadingContainer,
+  Spinner,
+  LoadingText,
+} from "./InfiniteScroll.styles";
 
 interface InfiniteScrollProps {
   hasMore: boolean;
@@ -9,7 +12,12 @@ interface InfiniteScrollProps {
   children: React.ReactNode;
 }
 
-const InfiniteScroll = ({ hasMore, loading, onLoadMore, children }: InfiniteScrollProps) => {
+const InfiniteScroll = ({
+  hasMore,
+  loading,
+  onLoadMore,
+  children,
+}: InfiniteScrollProps) => {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const handleObserver = useCallback(
@@ -26,7 +34,7 @@ const InfiniteScroll = ({ hasMore, loading, onLoadMore, children }: InfiniteScro
     if (!sentinel) return;
 
     const observer = new IntersectionObserver(handleObserver, {
-      threshold: 0.1,
+      threshold: 0,
     });
     observer.observe(sentinel);
     return () => observer.disconnect();
@@ -35,7 +43,7 @@ const InfiniteScroll = ({ hasMore, loading, onLoadMore, children }: InfiniteScro
   return (
     <>
       {children}
-      {hasMore && <div ref={sentinelRef} style={{ height: 1 }} />}
+      {hasMore && <div ref={sentinelRef} style={{ height: 20 }} />}
       {loading && (
         <LoadingContainer>
           <Spinner />
@@ -47,29 +55,3 @@ const InfiniteScroll = ({ hasMore, loading, onLoadMore, children }: InfiniteScro
 };
 
 export default InfiniteScroll;
-
-const spin = keyframes`
-  to { transform: rotate(360deg); }
-`;
-
-const LoadingContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 16px 0;
-`;
-
-const Spinner = styled.div`
-  width: 20px;
-  height: 20px;
-  border: 2px solid ${theme.colors.accentLight};
-  border-top-color: ${theme.colors.primary};
-  border-radius: 50%;
-  animation: ${spin} 0.8s linear infinite;
-`;
-
-const LoadingText = styled.span`
-  color: ${theme.colors.textSecondary};
-  font-size: 14px;
-`;

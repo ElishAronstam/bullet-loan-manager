@@ -1,5 +1,6 @@
-import { createLoan, getLoans, getLoanById } from "../services/loanService";
-import { PaymentType } from "../db/entities/Payment";
+import { createLoan } from "../services/loans/createLoan";
+import { getLoans } from "../services/loans/getLoans";
+import { getLoanById } from "../services/loans/getLoanById";
 import type {
   QueryLoansArgs,
   QueryLoanArgs,
@@ -7,11 +8,6 @@ import type {
 } from "./generated/types";
 
 export const resolvers = {
-  PaymentType: {
-    Interest: PaymentType.Interest,
-    PrincipalAndInterest: PaymentType.PrincipalInterest,
-  },
-
   Query: {
     loans: async (
       _parent: unknown,

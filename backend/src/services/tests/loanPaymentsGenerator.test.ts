@@ -1,15 +1,20 @@
 import { PaymentType } from "../../db/entities/Payment";
-import { generateLoanPayments } from "../loanPaymentsGenerator";
+import type { RateHistory } from "../rates/primeRateScraper";
+import { generateLoanPayments } from "../loans/loanPaymentsGenerator";
+
+/** Helper: creates a RateHistory map with a single fixed rate starting on the given date */
+const fixedRate = (startDate: string, rate: number): RateHistory =>
+  new Map([[startDate, rate]]);
 
 describe("generateLoanPayments", () => {
-  const fixedRate = new Map([["2024-01-01", 0.08]]); // 8%
+  const rate = 0.08; // 8%
 
   it("generates monthly interest-only payments and a final principal+interest payment", () => {
     const payments = generateLoanPayments(
       100_000,
       "2024-01-01",
       "2024-04-30",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     expect(payments).toHaveLength(4);
@@ -23,7 +28,7 @@ describe("generateLoanPayments", () => {
 
     // Last payment includes principal
     const last = payments[payments.length - 1];
-    expect(last.paymentType).toBe(PaymentType.PrincipalInterest);
+    expect(last.paymentType).toBe(PaymentType.PrincipalAndInterest);
     expect(last.principal).toBe(100_000);
     expect(last.remainingBalance).toBe(0);
   });
@@ -34,7 +39,7 @@ describe("generateLoanPayments", () => {
       100_000,
       "2024-01-01",
       "2024-03-31",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     expect(payments[0].interest).toBeCloseTo(666.67, 2);
@@ -46,11 +51,11 @@ describe("generateLoanPayments", () => {
       50_000,
       "2024-03-01",
       "2024-03-31",
-      fixedRate,
+      fixedRate("2024-03-01", rate),
     );
 
     expect(payments).toHaveLength(1);
-    expect(payments[0].paymentType).toBe(PaymentType.PrincipalInterest);
+    expect(payments[0].paymentType).toBe(PaymentType.PrincipalAndInterest);
     expect(payments[0].principal).toBe(50_000);
     expect(payments[0].remainingBalance).toBe(0);
   });
@@ -60,32 +65,13 @@ describe("generateLoanPayments", () => {
       100_000,
       "2024-01-01",
       "2024-01-31",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     expect(payments).toHaveLength(1);
-    expect(payments[0].paymentType).toBe(PaymentType.PrincipalInterest);
+    expect(payments[0].paymentType).toBe(PaymentType.PrincipalAndInterest);
     expect(payments[0].principal).toBe(100_000);
     expect(payments[0].total).toBe(100_000 + payments[0].interest);
-  });
-
-  it("pro-rates interest when rate changes mid-month", () => {
-    // Rate changes on Jan 16: 8% for days 1-15 (15 days), 10% for days 16-30 (15 days)
-    const rateHistory = new Map([
-      ["2024-01-01", 0.08],
-      ["2024-01-16", 0.1],
-    ]);
-
-    const payments = generateLoanPayments(
-      100_000,
-      "2024-01-01",
-      "2024-02-28",
-      rateHistory,
-    );
-
-    // Jan interest: 100,000 * 0.08 * (15/360) + 100,000 * 0.10 * (15/360)
-    // = 333.33 + 416.67 = 750.00
-    expect(payments[0].interest).toBeCloseTo(750.0, 2);
   });
 
   it("sets correct payment dates on last day of each month", () => {
@@ -93,7 +79,7 @@ describe("generateLoanPayments", () => {
       100_000,
       "2024-01-01",
       "2024-04-30",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     expect(payments[0].paymentDate).toBe("2024-01-31");
@@ -107,12 +93,12 @@ describe("generateLoanPayments", () => {
       100_000,
       "2024-01-01",
       "2024-06-15",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     const last = payments[payments.length - 1];
     expect(last.paymentDate).toBe("2024-06-15");
-    expect(last.paymentType).toBe(PaymentType.PrincipalInterest);
+    expect(last.paymentType).toBe(PaymentType.PrincipalAndInterest);
   });
 
   it("spans multiple years correctly", () => {
@@ -120,7 +106,7 @@ describe("generateLoanPayments", () => {
       100_000,
       "2023-11-01",
       "2024-02-29",
-      fixedRate,
+      fixedRate("2023-11-01", rate),
     );
 
     // Nov, Dec, Jan, Feb = 4 months
@@ -136,55 +122,33 @@ describe("generateLoanPayments", () => {
       100_000,
       "2024-01-01",
       "2024-03-15",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     // Jan 31, Feb 29 interest-only + Mar 15 principal+interest
     expect(payments).toHaveLength(3);
     expect(payments[0].paymentType).toBe(PaymentType.Interest);
     expect(payments[1].paymentType).toBe(PaymentType.Interest);
-    expect(payments[2].paymentType).toBe(PaymentType.PrincipalInterest);
+    expect(payments[2].paymentType).toBe(PaymentType.PrincipalAndInterest);
     expect(payments[2].paymentDate).toBe("2024-03-15");
     expect(payments[2].principal).toBe(100_000);
   });
 
-  it("handles multiple rate changes within a single month", () => {
-    const rateHistory = new Map([
-      ["2024-01-01", 0.06],
-      ["2024-01-11", 0.08],
-      ["2024-01-21", 0.10],
-    ]);
-
+  it("all interest amounts are equal with a fixed rate", () => {
     const payments = generateLoanPayments(
       100_000,
       "2024-01-01",
-      "2024-02-28",
-      rateHistory,
+      "2024-06-30",
+      fixedRate("2024-01-01", rate),
     );
 
-    // Jan: 10 days @ 6% + 10 days @ 8% + 10 days @ 10%
-    // = 100,000 * 0.06 * (10/360) + 100,000 * 0.08 * (10/360) + 100,000 * 0.10 * (10/360)
-    // = 166.67 + 222.22 + 277.78 = 666.67
-    expect(payments[0].interest).toBeCloseTo(666.67, 2);
-  });
-
-  it("applies new rate when rate changes on the 1st of a month", () => {
-    const rateHistory = new Map([
-      ["2024-01-01", 0.08],
-      ["2024-02-01", 0.12],
-    ]);
-
-    const payments = generateLoanPayments(
-      100_000,
-      "2024-01-01",
-      "2024-02-29",
-      rateHistory,
+    const interestOnly = payments.filter(
+      (p) => p.paymentType === PaymentType.Interest,
     );
 
-    // Jan: 100,000 * 0.08 * (30/360) = 666.67
-    expect(payments[0].interest).toBeCloseTo(666.67, 2);
-    // Feb: 100,000 * 0.12 * (30/360) = 1000.00
-    expect(payments[1].interest).toBeCloseTo(1000.0, 2);
+    for (const p of interestOnly) {
+      expect(p.interest).toBeCloseTo(666.67, 2);
+    }
   });
 
   it("handles February in a non-leap year", () => {
@@ -192,12 +156,12 @@ describe("generateLoanPayments", () => {
       100_000,
       "2023-02-01",
       "2023-02-28",
-      fixedRate,
+      fixedRate("2023-02-01", rate),
     );
 
     expect(payments).toHaveLength(1);
     expect(payments[0].paymentDate).toBe("2023-02-28");
-    expect(payments[0].paymentType).toBe(PaymentType.PrincipalInterest);
+    expect(payments[0].paymentType).toBe(PaymentType.PrincipalAndInterest);
   });
 
   it("total of all payments equals principal plus total interest", () => {
@@ -205,7 +169,7 @@ describe("generateLoanPayments", () => {
       200_000,
       "2024-01-01",
       "2024-06-30",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     const totalPaid = payments.reduce((sum, p) => sum + p.total, 0);
@@ -221,7 +185,7 @@ describe("generateLoanPayments", () => {
       150_000,
       "2024-01-01",
       "2024-12-31",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     const interestOnlyPayments = payments.filter(
@@ -239,11 +203,10 @@ describe("generateLoanPayments", () => {
       1,
       "2024-01-01",
       "2024-03-31",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     expect(payments).toHaveLength(3);
-    // 1 * 0.08 * (30/360) = 0.0067 -> rounds to 0.01
     for (const p of payments.slice(0, -1)) {
       expect(p.interest).toBeGreaterThanOrEqual(0);
     }
@@ -255,7 +218,7 @@ describe("generateLoanPayments", () => {
       10_000_000,
       "2024-01-01",
       "2024-02-29",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     // 10,000,000 * 0.08 * (30/360) = 66,666.67
@@ -268,7 +231,7 @@ describe("generateLoanPayments", () => {
       100_000,
       "2024-01-01",
       "2024-06-30",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     for (const p of payments) {
@@ -286,7 +249,7 @@ describe("generateLoanPayments", () => {
       100_000,
       "2024-01-01",
       "2024-06-30",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     const interestOnly = payments.filter(
@@ -303,7 +266,7 @@ describe("generateLoanPayments", () => {
       100_000,
       "2024-01-01",
       "2024-06-30",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     const last = payments[payments.length - 1];
@@ -315,7 +278,7 @@ describe("generateLoanPayments", () => {
       100_000,
       "2024-01-01",
       "2025-01-31",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     for (let i = 1; i < payments.length; i++) {
@@ -323,43 +286,31 @@ describe("generateLoanPayments", () => {
     }
   });
 
-  it("exactly one payment has type PrincipalInterest", () => {
+  it("exactly one payment has type PrincipalAndInterest", () => {
     const payments = generateLoanPayments(
       100_000,
       "2024-01-01",
       "2024-12-31",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     const principalPayments = payments.filter(
-      (p) => p.paymentType === PaymentType.PrincipalInterest,
+      (p) => p.paymentType === PaymentType.PrincipalAndInterest,
     );
 
     expect(principalPayments).toHaveLength(1);
     expect(principalPayments[0]).toBe(payments[payments.length - 1]);
   });
 
-  it("uses rate effective before loan start when no rate on exact start date", () => {
-    const rateHistory = new Map([
-      ["2023-06-01", 0.10],
-      ["2024-03-01", 0.12],
-    ]);
-
-    const payments = generateLoanPayments(
-      100_000,
-      "2024-01-01",
-      "2024-04-30",
-      rateHistory,
+  it("different rates produce different interest amounts", () => {
+    const lowRate = generateLoanPayments(
+      100_000, "2024-01-01", "2024-03-31", fixedRate("2024-01-01", 0.04),
+    );
+    const highRate = generateLoanPayments(
+      100_000, "2024-01-01", "2024-03-31", fixedRate("2024-01-01", 0.12),
     );
 
-    // Jan and Feb use 10% rate (from 2023-06-01)
-    // 100,000 * 0.10 * (30/360) = 833.33
-    expect(payments[0].interest).toBeCloseTo(833.33, 2);
-    expect(payments[1].interest).toBeCloseTo(833.33, 2);
-
-    // Mar uses 12% rate (from 2024-03-01)
-    // 100,000 * 0.12 * (30/360) = 1000.00
-    expect(payments[2].interest).toBeCloseTo(1000.0, 2);
+    expect(highRate[0].interest).toBeGreaterThan(lowRate[0].interest);
   });
 
   it("all interest values are non-negative", () => {
@@ -367,7 +318,7 @@ describe("generateLoanPayments", () => {
       100_000,
       "2024-01-01",
       "2024-12-31",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     for (const p of payments) {
@@ -380,7 +331,7 @@ describe("generateLoanPayments", () => {
       100_000,
       "2024-01-01",
       "2024-12-31",
-      fixedRate,
+      fixedRate("2024-01-01", rate),
     );
 
     // 12 months: 11 interest-only + 1 merged principal+interest
@@ -390,5 +341,110 @@ describe("generateLoanPayments", () => {
       (p) => p.paymentType === PaymentType.Interest,
     );
     expect(interestOnly).toHaveLength(11);
+  });
+});
+
+// --- Rate history tests (mid-month rate changes) ---
+
+describe("generateLoanPayments with rate history", () => {
+  it("pro-rates interest when rate changes mid-month", () => {
+    // Rate changes from 6% to 12% on Jan 16
+    // Days 1-15 at 6%: 100,000 * 0.06 * (15/360) = 250.00
+    // Days 16-30 at 12%: 100,000 * 0.12 * (15/360) = 500.00
+    // Total: 750.00
+    const rateHistory: RateHistory = new Map([
+      ["2024-01-01", 0.06],
+      ["2024-01-16", 0.12],
+    ]);
+
+    const payments = generateLoanPayments(
+      100_000,
+      "2024-01-01",
+      "2024-01-31",
+      rateHistory,
+    );
+
+    expect(payments).toHaveLength(1);
+    expect(payments[0].interest).toBeCloseTo(750.0, 2);
+  });
+
+  it("uses correct rate for each month when rate changes between months", () => {
+    // 6% for Jan, then 12% starting Feb 1
+    const rateHistory: RateHistory = new Map([
+      ["2024-01-01", 0.06],
+      ["2024-02-01", 0.12],
+    ]);
+
+    const payments = generateLoanPayments(
+      100_000,
+      "2024-01-01",
+      "2024-02-29",
+      rateHistory,
+    );
+
+    // Jan: 100,000 * 0.06 * (30/360) = 500.00
+    expect(payments[0].interest).toBeCloseTo(500.0, 2);
+    // Feb: 100,000 * 0.12 * (30/360) = 1000.00
+    expect(payments[1].interest).toBeCloseTo(1000.0, 2);
+  });
+
+  it("handles multiple rate changes within a single month", () => {
+    // Rate: 6% days 1-9, 8% days 10-19, 12% days 20-30
+    const rateHistory: RateHistory = new Map([
+      ["2024-03-01", 0.06],
+      ["2024-03-10", 0.08],
+      ["2024-03-20", 0.12],
+    ]);
+
+    const payments = generateLoanPayments(
+      100_000,
+      "2024-03-01",
+      "2024-03-31",
+      rateHistory,
+    );
+
+    // Days 1-9 (9 days) at 6%: 100,000 * 0.06 * (9/360) = 150.00
+    // Days 10-19 (10 days) at 8%: 100,000 * 0.08 * (10/360) = 222.22
+    // Days 20-30 (11 days) at 12%: 100,000 * 0.12 * (11/360) = 366.67
+    // Total ≈ 738.89
+    expect(payments).toHaveLength(1);
+    expect(payments[0].interest).toBeCloseTo(738.89, 2);
+  });
+
+  it("uses the most recent rate when no rate change occurs in a month", () => {
+    // Rate set before the loan starts — should carry forward
+    const rateHistory: RateHistory = new Map([
+      ["2023-12-01", 0.10],
+    ]);
+
+    const payments = generateLoanPayments(
+      100_000,
+      "2024-01-01",
+      "2024-02-29",
+      rateHistory,
+    );
+
+    // Both months at 10%: 100,000 * 0.10 * (30/360) = 833.33
+    expect(payments[0].interest).toBeCloseTo(833.33, 2);
+    expect(payments[1].interest).toBeCloseTo(833.33, 2);
+  });
+
+  it("rate change on 1st of month applies to the entire month", () => {
+    const rateHistory: RateHistory = new Map([
+      ["2024-01-01", 0.06],
+      ["2024-02-01", 0.12],
+    ]);
+
+    const payments = generateLoanPayments(
+      100_000,
+      "2024-01-01",
+      "2024-03-31",
+      rateHistory,
+    );
+
+    // Jan at 6%, Feb and Mar at 12%
+    expect(payments[0].interest).toBeCloseTo(500.0, 2);
+    expect(payments[1].interest).toBeCloseTo(1000.0, 2);
+    expect(payments[2].interest).toBeCloseTo(1000.0, 2);
   });
 });

@@ -1,7 +1,17 @@
 import { SortOrder } from "../../graphql/generated/types";
-import { Column } from "../../pages/LoanList/LoanList";
-import { Row, Table, TableData, TableHeader, SortIndicator } from "./DataTable.styles";
+import {
+  Row,
+  Table,
+  TableData,
+  TableHeader,
+  SortIndicator,
+} from "./DataTable.styles";
 
+export type Column<T> = {
+  header: string;
+  sortKey?: string;
+  value: (row: T) => string;
+};
 
 interface DataTableProps<T> {
   columns: Column<T>[];
@@ -34,7 +44,9 @@ function DataTable<T>({
             >
               {column.header}
               {column.sortKey && sortBy === column.sortKey && (
-                <SortIndicator>{sortOrder === SortOrder.ASC ? "▲" : "▼"}</SortIndicator>
+                <SortIndicator>
+                  {sortOrder === SortOrder.ASC ? "▲" : "▼"}
+                </SortIndicator>
               )}
             </TableHeader>
           ))}

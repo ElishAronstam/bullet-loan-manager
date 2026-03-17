@@ -1,25 +1,27 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 
-/** Client-side pagination — slices an already-loaded array with a simulated loading delay. */
 export const useClientLoadMore = (totalCount: number, pageSize: number) => {
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
 
   const hasMore = visibleCount < totalCount;
 
   const loadMore = useCallback(() => {
-    if (loading) return;
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     setTimeout(() => {
       setVisibleCount((prev) => Math.min(prev + pageSize, totalCount));
+      loadingRef.current = false;
       setLoading(false);
     }, 300);
-  }, [loading, totalCount, pageSize]);
+  }, [totalCount, pageSize]);
 
   return { visibleCount, loading, hasMore, loadMore };
 };
 
-/** Server-side pagination — increments a page counter. Loading guard is handled by InfiniteScroll. */
+
 export const useServerLoadMore = () => {
   const [page, setPage] = useState(1);
 

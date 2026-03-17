@@ -12,7 +12,7 @@ import {
   Value,
   SectionTitle,
 } from "./LoanDetail.styles";
-import QueryState from "../../components/QueryState";
+import QueryState from "../../components/QueryState/QueryState";
 import type { Loan } from "../../graphql/generated/types";
 
 interface LoanData {

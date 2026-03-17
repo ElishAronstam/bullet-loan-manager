@@ -1,10 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
 import { LoanEntity } from "./Loan";
+import { PaymentType } from "../../graphql/generated/types";
 
-export enum PaymentType {
-  Interest = "Interest",
-  PrincipalInterest = "Principal + Interest",
-}
+export { PaymentType };
 
 @Entity()
 export class PaymentEntity {
@@ -15,7 +13,7 @@ export class PaymentEntity {
   loan!: LoanEntity;
 
   @Column()
-  paymentDate!: string; // ISO date string
+  paymentDate!: string;
 
   @Column({ type: "text" })
   paymentType!: PaymentType;
