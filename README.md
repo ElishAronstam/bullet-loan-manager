@@ -40,6 +40,7 @@ because sometimes you just want to pay interest now and worry about the big stuf
 ```bash
 git clone https://github.com/ElishAronstam/bullet-loan-manager
 cd bullet-loan-manager
+paste API_KEY into backend/.env
 docker compose up
 ```
 
