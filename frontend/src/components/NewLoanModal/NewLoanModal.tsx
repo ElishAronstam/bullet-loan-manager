@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useMutation } from "@apollo/client";
 import toast from "react-hot-toast";
 import { CREATE_LOAN } from "../../graphql/mutations";
-import type {
+import {
   CreateLoanMutation,
   CreateLoanMutationVariables,
+  PaymentAllowed,
 } from "../../graphql/generated/types";
 import { GET_LOANS } from "../../graphql/queries";
 import {
@@ -30,6 +31,9 @@ const NewLoanModal = ({ isOpen, onClose }: NewLoanModalProps) => {
   const [principal, setPrincipal] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [paymentAllowed, setPaymentAllowed] = useState<PaymentAllowed>(
+    PaymentAllowed.OnWorkDay,
+  );
 
   const [createLoan, { loading }] = useMutation<
     CreateLoanMutation,
@@ -53,6 +57,7 @@ const NewLoanModal = ({ isOpen, onClose }: NewLoanModalProps) => {
             principal: parseFloat(principal),
             startDate,
             endDate,
+            paymentType: paymentAllowed,
           },
         },
       });
@@ -65,6 +70,10 @@ const NewLoanModal = ({ isOpen, onClose }: NewLoanModalProps) => {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create loan");
     }
+  };
+
+  const hadleSelectedPayment = (selectedPayment: PaymentAllowed) => {
+    setPaymentAllowed(selectedPayment);
   };
 
   return (
@@ -111,6 +120,20 @@ const NewLoanModal = ({ isOpen, onClose }: NewLoanModalProps) => {
               min={endDateMin}
               required
             />
+          </Field>
+          <Field>
+            <Label>Payments on non workdays</Label>
+            <select
+              name="selectedPaymnetType"
+              value={paymentAllowed}
+              onChange={(event) =>
+                hadleSelectedPayment(event.target.value as PaymentAllowed)
+              }
+            >
+              <option value={PaymentAllowed.OnWorkDay}>Allowed</option>
+              <option value={PaymentAllowed.Prev}>Move to prev work day</option>
+              <option value={PaymentAllowed.Next}>Move to next work day</option>
+            </select>
           </Field>
           <Actions>
             <CancelButton type="button" onClick={onClose}>

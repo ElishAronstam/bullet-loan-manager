@@ -15,7 +15,7 @@ import type { Loan, GetLoansQuery } from "../../graphql/generated/types";
 const PAGE_SIZE = 7;
 type LoanSummary = Pick<
   Loan,
-  "id" | "name" | "principal" | "startDate" | "totalInterest"
+  "id" | "name" | "principal" | "startDate" | "totalInterest" | "paymentType"
 >;
 
 const columns: Column<LoanSummary>[] = [
@@ -35,6 +35,11 @@ const columns: Column<LoanSummary>[] = [
     sortKey: "totalInterest",
     value: (loan: LoanSummary) => `$${loan.totalInterest.toLocaleString()}`,
   },
+  {
+    header: "Payment Allowed",
+    sortKey: "paymentAlloed",
+    value: (loan: LoanSummary) => loan.paymentType,
+  },
 ];
 
 const LoanList = () => {
@@ -43,7 +48,7 @@ const LoanList = () => {
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortBy, setSortBy] = useState("name");
-  const [sortOrder, setSortOrder] = useState<SortOrder>(SortOrder.ASC);
+  const [sortOrder, setSortOrder] = useState<SortOrder>(SortOrder.Asc);
   const navigate = useNavigate();
 
   const { page, loadMore, reset } = useServerLoadMore();
@@ -67,15 +72,15 @@ const LoanList = () => {
   const hasMore = allLoans.length < totalCount;
 
   useEffect(() => {
-    setAllLoans([]);
     reset();
   }, [debouncedSearch, sortBy, sortOrder, reset]);
 
   useEffect(() => {
     if (data?.loans.loans) {
       setAllLoans((prev) => {
-        const startIndex = (page - 1) * PAGE_SIZE;
+        if (page === 1) return [...data.loans.loans];
         const updated = [...prev];
+        const startIndex = (page - 1) * PAGE_SIZE;
         data.loans.loans.forEach((loan, index) => {
           updated[startIndex + index] = loan;
         });
@@ -87,11 +92,11 @@ const LoanList = () => {
   const handleSort = (key: string) => {
     if (sortBy === key) {
       setSortOrder((prev) =>
-        prev === SortOrder.ASC ? SortOrder.DESC : SortOrder.ASC,
+        prev === SortOrder.Asc ? SortOrder.Desc : SortOrder.Asc,
       );
     } else {
       setSortBy(key);
-      setSortOrder(SortOrder.ASC);
+      setSortOrder(SortOrder.Asc);
     }
   };
 

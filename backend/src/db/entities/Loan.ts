@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
 import { PaymentEntity } from "./Payment";
+import { PaymentAllowed } from "../../graphql/generated/types";
 
 @Entity()
 export class LoanEntity {
@@ -23,6 +24,9 @@ export class LoanEntity {
 
   @Column("decimal", { default: 0 })
   totalInterest!: number;
+
+  @Column({default:PaymentAllowed.OnWorkDay})
+  paymentType!: PaymentAllowed;
 
   @OneToMany(() => PaymentEntity, (payment) => payment.loan, { cascade: true })
   payments!: PaymentEntity[];

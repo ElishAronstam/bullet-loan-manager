@@ -7,7 +7,11 @@ let cachedEnd = "";
 let cachedAt = 0;
 
 const CACHE_TTL =
-  parseInt(process.env.PRIME_RATE_CACHE_TTL_DAYS || "30") * 24 * 60 * 60 * 1000;
+  (parseInt(process.env.PRIME_RATE_CACHE_TTL_DAYS || "30")) *
+  24 *
+  60 *
+  60 *
+  1000;
 
 const todayStr = () => new Date().toISOString().split("T")[0];
 
@@ -105,18 +109,13 @@ export const fetchPrimeRateHistory = async (
 
   if (isCovered) {
     console.log(`Rate history cache hit (${startDate} → ${endCap})`);
-    return new Map(
-      [...cachedHistory].filter(
-        ([date]) => date >= startDate && date <= endCap,
-      ),
-    );
+    return cachedHistory;
   }
 
   const fetchStart =
     !isCacheExpired() && cachedStart && cachedStart < startDate
       ? cachedStart
       : startDate;
-      
   const fetchEnd =
     !isCacheExpired() && cachedEnd && cachedEnd > endCap ? cachedEnd : endCap;
 

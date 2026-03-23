@@ -45,7 +45,7 @@ function DataTable<T>({
               {column.header}
               {column.sortKey && sortBy === column.sortKey && (
                 <SortIndicator>
-                  {sortOrder === SortOrder.ASC ? "▲" : "▼"}
+                  {sortOrder === SortOrder.Asc ? "▲" : "▼"}
                 </SortIndicator>
               )}
             </TableHeader>
@@ -57,7 +57,7 @@ function DataTable<T>({
           <Row
             key={rowKey(item)}
             onClick={() => onRowClick?.(item)}
-            isClickable={!!onRowClick}
+            $isClickable={!!onRowClick}
           >
             {columns.map((column) => (
               <TableData key={column.header}>{column.value(item)}</TableData>

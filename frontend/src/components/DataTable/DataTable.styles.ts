@@ -29,8 +29,8 @@ export const SortIndicator = styled.span`
   font-size: 11px;
 `;
 
-export const Row = styled.tr<{ isClickable: boolean }>`
-  cursor: ${(p) => (p.isClickable ? "pointer" : "default")};
+export const Row = styled.tr<{ $isClickable: boolean }>`
+  cursor: ${(p) => (p.$isClickable ? "pointer" : "default")};
   transition: background 0.15s;
 
   &:hover {

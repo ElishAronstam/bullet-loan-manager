@@ -2,7 +2,10 @@ import { AppDataSource } from "../../db/datasource";
 import { LoanEntity } from "../../db/entities/Loan";
 import { PaymentEntity } from "../../db/entities/Payment";
 import type { LoanInput } from "../../graphql/generated/types";
-import { getCurrentPrimeRate, fetchPrimeRateHistory } from "../rates/primeRateScraper";
+import {
+  getCurrentPrimeRate,
+  fetchPrimeRateHistory,
+} from "../rates/primeRateScraper";
 import { generateLoanPayments } from "./loanPaymentsGenerator";
 
 export const createLoan = async (newLoan: LoanInput): Promise<LoanEntity> => {
@@ -44,6 +47,7 @@ export const createLoan = async (newLoan: LoanInput): Promise<LoanEntity> => {
         endDate: newLoan.endDate,
         interestRate: currentRate,
         totalInterest,
+        paymentType: newLoan.paymentType,
       });
       await manager.save(loan);
 

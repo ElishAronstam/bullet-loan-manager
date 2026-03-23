@@ -4,6 +4,12 @@ export const schema = `#graphql
     PrincipalAndInterest
   }
 
+  enum PaymentAllowed{
+   ON_WORK_DAY
+   PREV
+   NEXT
+  }
+
   type Payment {
     id: ID!
     paymentDate: String!
@@ -23,6 +29,7 @@ export const schema = `#graphql
     interestRate: Float!
     totalInterest: Float!
     payments: [Payment!]!
+    paymentType: PaymentAllowed!
   }
 
   type LoanPage {
@@ -35,12 +42,15 @@ export const schema = `#graphql
     principal: Float!
     startDate: String!
     endDate: String!
+    paymentType: PaymentAllowed!
   }
 
   enum SortOrder {
     ASC
     DESC
   }
+  
+
 
   type Query {
     loans(page: Int, pageSize: Int, searchText: String, sortBy: String, sortOrder: SortOrder): LoanPage!

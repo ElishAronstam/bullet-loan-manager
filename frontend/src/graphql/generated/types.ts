@@ -23,6 +23,7 @@ export type Loan = {
   id: Scalars['ID']['output'];
   interestRate: Scalars['Float']['output'];
   name: Scalars['String']['output'];
+  paymentType: PaymentAllowed;
   payments: Array<Payment>;
   principal: Scalars['Float']['output'];
   startDate: Scalars['String']['output'];
@@ -32,6 +33,7 @@ export type Loan = {
 export type LoanInput = {
   endDate: Scalars['String']['input'];
   name: Scalars['String']['input'];
+  paymentType: PaymentAllowed;
   principal: Scalars['Float']['input'];
   startDate: Scalars['String']['input'];
 };
@@ -62,6 +64,12 @@ export type Payment = {
   remainingBalance: Scalars['Float']['output'];
   total: Scalars['Float']['output'];
 };
+
+export enum PaymentAllowed {
+  Next = 'NEXT',
+  OnWorkDay = 'ON_WORK_DAY',
+  Prev = 'PREV'
+}
 
 export enum PaymentType {
   Interest = 'Interest',
@@ -109,7 +117,7 @@ export type GetLoansQueryVariables = Exact<{
 }>;
 
 
-export type GetLoansQuery = { __typename?: 'Query', loans: { __typename?: 'LoanPage', loansCount: number, loans: Array<{ __typename?: 'Loan', id: string, name: string, principal: number, startDate: string, totalInterest: number }> } };
+export type GetLoansQuery = { __typename?: 'Query', loans: { __typename?: 'LoanPage', loansCount: number, loans: Array<{ __typename?: 'Loan', id: string, name: string, principal: number, startDate: string, totalInterest: number, paymentType: PaymentAllowed }> } };
 
 export type GetLoanQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -171,6 +179,7 @@ export const GetLoansDocument = gql`
       principal
       startDate
       totalInterest
+      paymentType
     }
     loansCount
   }

@@ -41,5 +41,6 @@ export const getLoans = async (
   });
 
   console.log(`Fetched ${loans.length} of ${loansCount} loans`);
+  console.log(loans)
   return { loans, loansCount };
 };

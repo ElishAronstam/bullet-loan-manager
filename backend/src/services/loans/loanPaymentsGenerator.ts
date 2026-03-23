@@ -36,10 +36,12 @@ const buildRateSegments = (
   monthStart: string,
   monthEnd: string,
   rateHistory: RateHistory,
+  startDay?: number,
+  endDay?: number,
 ): RateSegment[] => {
   const segments: RateSegment[] = [];
   let currentRate = getRateOnDate(monthStart, rateHistory);
-  let currentDay = 1;
+  let currentDay = startDay || 1;
 
   for (const [date, rate] of rateHistory) {
     if (date <= monthStart || date > monthEnd) continue;
@@ -52,7 +54,7 @@ const buildRateSegments = (
     currentDay = changeDay;
   }
 
-  segments.push({ days: 30 - (currentDay - 1), rate: currentRate });
+  segments.push({ days: (endDay || 30) - (currentDay - 1), rate: currentRate });
   return segments;
 };
 
@@ -61,11 +63,19 @@ const calculateMonthInterest = (
   year: number,
   month: number,
   rateHistory: RateHistory,
+  dayStart?: number,
+  endDay?: number,
 ): number => {
-  const monthStart = formatDate(new Date(year, month, 1));
-  const monthEnd = formatDate(lastDayOfMonth(year, month));
+  const monthStart = formatDate(new Date(year, month, dayStart || 1));
+  const monthEnd = formatDate(new Date(year, month + 1, endDay || 0));
+  const segments = buildRateSegments(
+    monthStart,
+    monthEnd,
+    rateHistory,
+    dayStart,
+    endDay,
+  );
 
-  const segments = buildRateSegments(monthStart, monthEnd, rateHistory);
   const interest = segments.reduce(
     (sum, seg) => sum + principal * seg.rate * (seg.days / 360),
     0,
@@ -89,6 +99,25 @@ export const generateLoanPayments = (
     startDateObj.getFullYear(),
     startDateObj.getMonth(),
   );
+  console.log("startDate", startDate);
+  console.log("first payment date", paymentDate);
+  const firstInterest = calculateMonthInterest(
+    principal,
+    paymentDate.getFullYear(),
+    paymentDate.getMonth(),
+    rateHistory,
+    startDateObj.getDate(),
+  );
+  console.log("first payment interest", firstInterest);
+  payments.push({
+    paymentDate: formatDate(paymentDate),
+    paymentType: PaymentType.Interest,
+    principal: 0,
+    interest: firstInterest,
+    total: firstInterest,
+    remainingBalance: principal,
+  });
+  paymentDate = nextMonthEnd(paymentDate);
 
   while (paymentDate < endDateObj) {
     const interest = calculateMonthInterest(
@@ -116,6 +145,8 @@ export const generateLoanPayments = (
     endDateObj.getFullYear(),
     endDateObj.getMonth(),
     rateHistory,
+    undefined,
+    endDateObj.getDate(),
   );
 
   const lastPaymentIsEndDate =

@@ -9,6 +9,7 @@ export const GET_LOANS = gql`
         principal
         startDate
         totalInterest
+        paymentType
       }
       loansCount
     }
